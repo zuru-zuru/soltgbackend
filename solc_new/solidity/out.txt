@@ -1,0 +1,49 @@
+Invariant generation in CHC encoding enabled!
+relation registered: interface_0_SimpleStorage_33
+relation registered: nondet_interface_1_SimpleStorage_33
+relation registered: summary_constructor_2_SimpleStorage_33
+relation registered: summary_3_function_get__32_33
+relation registered: summary_4_function_get__32_33
+relation registered: block_5_function_get__32_33
+relation registered: block_6_get_31_33
+relation registered: block_7_return_function_get__32_33
+relation registered: block_8_while_header_get_22_33
+relation registered: block_9_while_precondition_test_get_22_33
+relation registered: block_10_while_body_get_21_33
+relation registered: block_11_while_inductive_test_get_22_33
+relation registered: block_12_get_31_33
+Reached if block 
+relation registered: invariant_target_0
+UNSAT: Is an invariant
+relation registered: invariant_target_1
+SAT: Not an invariant
+relation registered: block_13_function_get__32_33
+relation registered: block_14_return_ghost_get_30_33
+relation registered: block_15_function_get__32_33
+relation registered: contract_initializer_16_SimpleStorage_33
+relation registered: contract_initializer_entry_17_SimpleStorage_33
+relation registered: contract_initializer_after_init_18_SimpleStorage_33
+relation registered: implicit_constructor_entry_19_SimpleStorage_33
+relation registered: interface_0_SimpleStorage_33
+relation registered: nondet_interface_1_SimpleStorage_33
+relation registered: summary_constructor_2_SimpleStorage_33
+relation registered: summary_3_function_get__32_33
+relation registered: summary_4_function_get__32_33
+relation registered: block_5_function_get__32_33
+relation registered: block_6_get_31_33
+relation registered: block_7_return_function_get__32_33
+relation registered: block_8_while_header_get_22_33
+relation registered: block_9_while_precondition_test_get_22_33
+relation registered: block_10_while_body_get_21_33
+relation registered: block_11_while_inductive_test_get_22_33
+relation registered: block_12_get_31_33
+Reached if block 
+No 
+relation registered: block_13_function_get__32_33
+relation registered: block_14_return_ghost_get_30_33
+relation registered: block_15_function_get__32_33
+relation registered: contract_initializer_16_SimpleStorage_33
+relation registered: contract_initializer_entry_17_SimpleStorage_33
+relation registered: contract_initializer_after_init_18_SimpleStorage_33
+relation registered: implicit_constructor_entry_19_SimpleStorage_33
+relation registered: error_target_3
