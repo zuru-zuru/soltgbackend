@@ -38,16 +38,17 @@ class Invariant {
         smtutil::Expression intConst;               
         bool boolVal;       
         bool isConst;           
+        bool isArray;
 
 
         Invariant(const VariableDeclaration* v1, RelOp op, const VariableDeclaration* v2) 
-            : var1(v1), var2(v2), isBoolean(false), relop(op), intConst((size_t)0), boolVal(false), isConst(false) {}
+            : var1(v1), var2(v2), isBoolean(false), relop(op), intConst((size_t)0), boolVal(false), isConst(false), isArray(false) {}
 
-        Invariant(const VariableDeclaration* v1, RelOp op, smtutil::Expression constant) 
-            : var1(v1), var2(nullptr), isBoolean(false), relop(op), intConst(constant), boolVal(false), isConst(true) {}
+        Invariant(const VariableDeclaration* v1, RelOp op, smtutil::Expression constant, bool array) 
+            : var1(v1), var2(nullptr), isBoolean(false), relop(op), intConst(constant), boolVal(false), isConst(true), isArray(array) {}
 
         Invariant(const VariableDeclaration* v1, bool b) 
-            : var1(v1), var2(nullptr), isBoolean(true), relop(RelOp::EQ), intConst((size_t)0), boolVal(b), isConst(true) {}
+            : var1(v1), var2(nullptr), isBoolean(true), relop(RelOp::EQ), intConst((size_t)0), boolVal(b), isConst(true), isArray(false) {}
 };
 
 
@@ -87,8 +88,9 @@ class InvariantHandler {
         std::vector<smtutil::Expression> m_constants;
         CHCInv* m_encoder;
         smtutil::Expression invariantToExpression(Invariant _inv); 
+        smtutil::Expression invariantToExpression(const VariableDeclaration* var1, bool boolValue);
         smtutil::Expression invariantToExpression(const VariableDeclaration* var1, RelOp op, const VariableDeclaration* var2);
-        smtutil::Expression invariantToExpression(const VariableDeclaration* var1, RelOp op, smtutil::Expression intConst);
+        smtutil::Expression invariantToExpression(const VariableDeclaration* var1, RelOp op, smtutil::Expression intConst, bool isArray);
 
         std::map<const Statement*, std::vector<Invariant>> m_saved_invariants;
 };

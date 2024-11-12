@@ -629,18 +629,33 @@ void InvariantHandler::resetConstants() {
 
 void InvariantHandler::generateCandidates(std::vector<Invariant> &_candidates, std::set<const VariableDeclaration*> &changed_vars) {
     std::vector<const VariableDeclaration*> int_vars;
+    std::vector<const VariableDeclaration*> bool_vars;
+    std::vector<const VariableDeclaration*> array_vars;
     
     for (auto const* var : m_encoder->m_stateVariables) {
         auto _type = var->type();
         if (isInteger(*_type)) {
             int_vars.push_back(var);
         }
+        if (isBool(*_type)) {
+            bool_vars.push_back(var);
+        }
+        if (isArray(*_type) || isMapping(*_type)) {
+            array_vars.push_back(var);
+        }
+    
     }
         
     for (auto const& var: m_encoder->m_currentFunction->parameters() + m_encoder->m_currentFunction->returnParameters()) {
         auto _type = var->type();
         if (isInteger(*_type)) {
             int_vars.push_back(var.get());
+        }
+        if (isBool(*_type)) {
+            bool_vars.push_back(var.get());
+        }
+        if (isArray(*_type) || isMapping(*_type)) {
+            array_vars.push_back(var.get());
         }
     }
 
@@ -649,25 +664,25 @@ void InvariantHandler::generateCandidates(std::vector<Invariant> &_candidates, s
         if (isInteger(*_type)) {
             int_vars.push_back(var);
         }
+        if (isBool(*_type)) {
+            bool_vars.push_back(var);
+        }
+        if (isArray(*_type) || isMapping(*_type)) {
+            array_vars.push_back(var);
+        }
     }
 
-    std::vector<int> int_constants = {1, 0, 10};
     // int_constants.push_back(-1, 0, 1, 5, 10);
 	
     for (size_t i = 0; i < int_vars.size(); i++) {
-        for (size_t j = i + 1; j < int_vars.size(); j++) {
+        for (size_t j = 0; j < int_vars.size(); j++) {
             if (changed_vars.find(int_vars[i]) == changed_vars.end()) continue;
-            // EQ, LT, GT, LE, GE
-            // Invariant _candidate1(int_vars[i], RelOp::EQ, int_vars[j]);
-            // _candidates.push_back(_candidate1);
-            // Invariant _candidate2(int_vars[i], RelOp::LT, int_vars[j]);
-            // _candidates.push_back(_candidate2);
+            if (changed_vars.find(int_vars[j]) == changed_vars.end() && i <= j) continue;
+
             Invariant _candidate3(int_vars[i], RelOp::GE, int_vars[j]);
             _candidates.push_back(_candidate3);
             Invariant _candidate4(int_vars[i], RelOp::LE, int_vars[j]);
             _candidates.push_back(_candidate4);
-            // Invariant _candidate5(int_vars[i], RelOp::GT, int_vars[j]);
-            // _candidates.push_back(_candidate5);
             Invariant _candidate6(int_vars[i], RelOp::EQ, int_vars[j]);
             _candidates.push_back(_candidate4);
         }
@@ -677,54 +692,75 @@ void InvariantHandler::generateCandidates(std::vector<Invariant> &_candidates, s
         for (auto _const: m_constants) {
             if (changed_vars.find(int_vars[i]) == changed_vars.end()) continue;
             // EQ, LT, GT, LE, GE
-            Invariant _candidate1(int_vars[i], RelOp::EQ, _const);
+            Invariant _candidate1(int_vars[i], RelOp::EQ, _const, false);
             _candidates.push_back(_candidate1);
-            // Invariant _candidate2(int_vars[i], RelOp::LT, _const);
-            // _candidates.push_back(_candidate2);
-            Invariant _candidate3(int_vars[i], RelOp::GE, _const);
+            Invariant _candidate3(int_vars[i], RelOp::GE, _const, false);
             _candidates.push_back(_candidate3);
-            Invariant _candidate4(int_vars[i], RelOp::LE, _const);
+            Invariant _candidate4(int_vars[i], RelOp::LE, _const, false);
             _candidates.push_back(_candidate4);
-            // Invariant _candidate5(int_vars[i], RelOp::GT, _const);
-            // _candidates.push_back(_candidate5);
         }
     }
 
-    // _candidates.clear();
-    // _candidates.push_back(true);
-    // _candidates.push_back(true);
-    // _candidates.push_back(false);
+    // boolean vars
+    for (size_t i = 0; i < bool_vars.size(); i++) {
+        Invariant _candidate1(int_vars[i], true);
+        _candidates.push_back(_candidate1);
+        Invariant _candidate4(int_vars[i], false);
+        _candidates.push_back(_candidate4);
+    }
+
+    for (size_t i = 0; i < array_vars.size(); i++) {
+        for (auto _const: m_constants) {
+            if (changed_vars.find(array_vars[i]) == changed_vars.end()) continue;
+            // EQ, LT, GT, LE, GE
+            Invariant _candidate1(array_vars[i], RelOp::EQ, _const, true);
+            _candidates.push_back(_candidate1);
+            Invariant _candidate3(array_vars[i], RelOp::GE, _const, true);
+            _candidates.push_back(_candidate3);
+            Invariant _candidate4(array_vars[i], RelOp::LE, _const, true);
+            _candidates.push_back(_candidate4);
+        }
+    }
+
     return;
 }
 
 smtutil::Expression InvariantHandler::invariantToExpression(Invariant _inv) {
     if (_inv.isConst && !_inv.isBoolean) {
-        return invariantToExpression(_inv.var1, _inv.relop, _inv.intConst);
+        return invariantToExpression(_inv.var1, _inv.relop, _inv.intConst, _inv.isArray);
     }
     else if (!_inv.isConst && !_inv.isBoolean) {
-        return invariantToExpression(_inv.var1, _inv.relop, _inv.intConst);
+        return invariantToExpression(_inv.var1, _inv.relop, _inv.var2);
+    }
+    else if (_inv.isConst && _inv.isBoolean) {
+        return invariantToExpression(_inv.var1, _inv.boolVal);
     }
     return smtutil::Expression(false);
 }
 
 smtutil::Expression InvariantHandler::invariantToExpression(const VariableDeclaration* var1, RelOp op, const VariableDeclaration* var2) {
-    (void) var1;
-    (void) op;
-    (void) var2;
-    return smtutil::Expression(false);
+    auto symVar1 = m_encoder->m_context.variable(*var1)->currentValue();
+    auto symVar2 = m_encoder->m_context.variable(*var2)->currentValue();
+ 
+    switch (op) {
+        case RelOp::EQ :
+            return symVar1 != symVar2;
+        case RelOp::GE :
+            return symVar1 >= symVar2;
+        case RelOp::LE :
+            return symVar1 <= symVar2;
+        default:
+            return smtutil::Expression(false);
+    }
 }
 
-smtutil::Expression InvariantHandler::invariantToExpression(const VariableDeclaration* var1, RelOp op, smtutil::Expression intConst) {
-    auto symVar1 = m_encoder->m_context.variable(*var1)->currentValue();
- 
+smtutil::Expression InvariantHandler::invariantToExpression(const VariableDeclaration* var1, RelOp op, smtutil::Expression intConst, bool isArray) {
+    smtutil::Expression symVar1 = (isArray) ? std::dynamic_pointer_cast<smt::SymbolicArrayVariable>(m_encoder->m_context.variable(*var1))->length() 
+                                            : m_encoder->m_context.variable(*var1)->currentValue(); 
     smtutil::Expression _intConst = intConst;
     switch (op) {
         case RelOp::EQ :
             return symVar1 != _intConst;
-        case RelOp::GT :
-            return symVar1 > _intConst;
-        case RelOp::LT :
-            return symVar1 < _intConst;
         case RelOp::GE :
             return symVar1 >= _intConst;
         case RelOp::LE :
@@ -732,6 +768,11 @@ smtutil::Expression InvariantHandler::invariantToExpression(const VariableDeclar
         default:
             return smtutil::Expression(false);
     }
+}
+
+smtutil::Expression InvariantHandler::invariantToExpression(const VariableDeclaration* var1, bool boolValue) {
+    auto symVar1 = m_encoder->m_context.variable(*var1)->currentValue();
+    return symVar1 == smtutil::Expression(boolValue);
 }
 
 void InvariantHandler::generatePreconditionTargets(const Predicate& _precondition_block, std::vector<Invariant> &candidates, std::vector<const Predicate *> &targets) {

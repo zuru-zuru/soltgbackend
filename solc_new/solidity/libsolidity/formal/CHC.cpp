@@ -414,7 +414,7 @@ void CHC::endVisit(FunctionDefinition const& _function)
 		connectBlocks(ifacePre, interface(), sum && errorFlag().currentValue() == 0);
 	}
 	else if (_function.isConstructor()) {
-		for (auto decl: m_currentContract->stateVariables()) {
+		for (auto decl: SMTEncoder::stateVariablesIncludingInheritedAndPrivate(*m_currentContract)) {
 			m_dependency_handler.addVariableAssignment(decl, &_function);
 		}
 	}

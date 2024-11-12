@@ -1,0 +1,9 @@
+[submodule "solc_new/solidity/deps/nlohmann-json"]
+	path = solc_new/solidity/deps/nlohmann-json
+	url = https://github.com/nlohmann/json.git
+[submodule "solc_new/solidity/deps/range-v3"]
+	path = solc_new/solidity/deps/range-v3
+	url = https://github.com/ericniebler/range-v3.git
+[submodule "solc_new/solidity/deps/fmtlib"]
+	path = solc_new/solidity/deps/fmtlib
+	url = https://github.com/fmtlib/fmt.git
