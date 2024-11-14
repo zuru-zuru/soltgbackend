@@ -677,7 +677,7 @@ void InvariantHandler::generateCandidates(std::vector<Invariant> &_candidates, s
     for (size_t i = 0; i < int_vars.size(); i++) {
         for (size_t j = 0; j < int_vars.size(); j++) {
             if (changed_vars.find(int_vars[i]) == changed_vars.end()) continue;
-            if (changed_vars.find(int_vars[j]) == changed_vars.end() && i <= j) continue;
+            if (changed_vars.find(int_vars[j]) != changed_vars.end() && i <= j) continue;
 
             Invariant _candidate3(int_vars[i], RelOp::GE, int_vars[j]);
             _candidates.push_back(_candidate3);
@@ -703,9 +703,10 @@ void InvariantHandler::generateCandidates(std::vector<Invariant> &_candidates, s
 
     // boolean vars
     for (size_t i = 0; i < bool_vars.size(); i++) {
-        Invariant _candidate1(int_vars[i], true);
+        if (changed_vars.find(bool_vars[i]) == changed_vars.end()) continue;
+        Invariant _candidate1(bool_vars[i], true);
         _candidates.push_back(_candidate1);
-        Invariant _candidate4(int_vars[i], false);
+        Invariant _candidate4(bool_vars[i], false);
         _candidates.push_back(_candidate4);
     }
 
@@ -772,6 +773,9 @@ smtutil::Expression InvariantHandler::invariantToExpression(const VariableDeclar
 
 smtutil::Expression InvariantHandler::invariantToExpression(const VariableDeclaration* var1, bool boolValue) {
     auto symVar1 = m_encoder->m_context.variable(*var1)->currentValue();
+    // (void) boolValue;
+    // std::cout << symVar1.name << std::endl;
+    // return symVar1;
     return symVar1 == smtutil::Expression(boolValue);
 }
 
