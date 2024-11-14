@@ -284,8 +284,132 @@ void CHCInv::analyze(SourceUnit const& _source)
 }
 
 bool CHCInv::visitDoWhile(WhileStatement const& _while) {
-    return CHC::visit(_while);
+    int hasLoopOrRecursionPrev = hasLoopOrRecursion;
+    hasLoopOrRecursion += 1;
+    int hasBranchPrev = hasBranch;
+
+	bool unknownFunctionCallWasSeen = m_unknownFunctionCallSeen;
+	m_unknownFunctionCallSeen = false;
+
+	solAssert(m_currentFunction, "");
+	auto const& functionBody = m_currentFunction->body();
+
+	auto namePrefix = std::string(_while.isDoWhile() ? "do_" : "") + "while";
+	auto loopHeaderBlock = createBlock(&_while, PredicateType::FunctionBlock, namePrefix + "_header_");
+    // declare precondition test block
+    auto preconditionTestBlock = createBlock(&_while, PredicateType::FunctionBlock, namePrefix + "_precondition_test_");
+	auto loopBodyBlock = createBlock(&_while.body(), PredicateType::FunctionBlock, namePrefix + "_body_");
+    // declare inductive test block
+    auto inductiveTestBlock = createBlock(&_while, PredicateType::FunctionBlock, namePrefix + "_inductive_test_");
+	auto afterLoopBlock = createBlock(&functionBody, PredicateType::FunctionBlock);
+
+	auto outerBreakDest = m_breakDest;
+	auto outerContinueDest = m_continueDest;
+	m_breakDest = afterLoopBlock;
+	m_continueDest = loopHeaderBlock;
+
+    // connect to precondition test
+    connectBlocks(m_currentBlock, predicate(*preconditionTestBlock));
+
+    m_context.resetChangedVariables();
+
+    setCurrentBlock(*loopBodyBlock);
+
+	_while.body().accept(*this);
+
+    connectBlocks(m_currentBlock, predicate(*loopHeaderBlock));
+    
+    setCurrentBlock(*loopHeaderBlock);
+
+    m_invariant_checker.resetConstants();
+    saveConstants = true;
+	_while.condition().accept(*this);
+    saveConstants = false;
+
+    m_breakDest = outerBreakDest;
+	m_continueDest = outerContinueDest;
+
+	auto condition = expr(_while.condition());
+
+	connectBlocks(m_currentBlock, predicate(*inductiveTestBlock), condition);
+	connectBlocks(m_currentBlock, predicate(*afterLoopBlock), !condition);
+
+    setCurrentBlock(*preconditionTestBlock);
+    auto preconditionPredicate = predicate(*preconditionTestBlock);
+
+
+    
+    for (auto const* var: m_stateVariables) {
+        m_context.changedValue(*var);        
+    }
+    for (auto const& var: m_currentFunction->parameters() + m_currentFunction->returnParameters()) {
+        m_context.changedValue(*var);
+    }
+    for (auto const& var: localVariablesIncludingModifiers(*m_currentFunction, m_currentContract)) {
+        m_context.changedValue(*var);
+    }
+
+    if (m_context.changedState()) {
+        m_context.state().newState();
+    }
+
+
+    // can i generate invariants??
+    std::cout << hasLoopOrRecursion << " " << hasLoopOrRecursionPrev << " " << hasBranch << " " << hasBranchPrev << " " << firstPass << "\n";
+    bool canGenInvariants = ! ((hasLoopOrRecursionPrev > 0) || (hasLoopOrRecursion > hasLoopOrRecursionPrev + 1) || (hasBranch > hasBranchPrev) || (firstPass));
+    m_invariant_checker.setEncoder(this);
+    if (source_invariants_generated && m_invariant_checker.check_saved_invariants(&_while)) {
+        std::cout << "Invariants added to encoding\n";
+        auto invariant = m_invariant_checker.get_saved_invariants(&_while);
+        connectBlocks(m_currentBlock, predicate(*loopBodyBlock), invariant);
+
+    }
+    else if (canGenInvariants && !source_invariants_generated) {
+        std::cout << "Invariants generated\n";
+        // if yes...
+        // generate candidates
+        std::vector<Invariant> initial_candidates, inductive_candidates, invariants;
+        CandidateStore candidate_invariants;
+        candidate_invariants.function = m_currentFunction;
+        candidate_invariants.contract = m_currentContract;
+        candidate_invariants.loop = &_while;
+        candidate_invariants.header = loopBodyBlock;
+        candidate_invariants.precondition = preconditionTestBlock;
+        candidate_invariants.candidates.clear();
+        candidate_invariants.changed_vars = m_context.m_changed_variables;
+        candidate_invariants.changed_state = m_context.m_changed_state;
+// generate candidates
+        m_invariant_checker.generateCandidates(candidate_invariants.candidates, candidate_invariants.changed_vars);
+// generate targets
+        m_invariant_checker.generatePreconditionTargets(*preconditionTestBlock, candidate_invariants.candidates, candidate_invariants.precondition_targets);
+        m_invariant_checker.generateInductiveTargets(*inductiveTestBlock, candidate_invariants.candidates, candidate_invariants.inductive_targets);
+        // connectBlocks(m_currentBlock, preconditionTestBlock, )
+        InvariantTargets.push_back(candidate_invariants);
+        // m_invariant_checker.save_invariants(invariants, &_while);
+    }
+    else {
+        if (firstPass) std::cout << "First pass\n"; 
+        else std::cout << "Invariants not generated\n";
+        // if no..
+        // push scope etc if required idt this is required
+        // connect inductive test to loop header
+        setCurrentBlock(*inductiveTestBlock);
+        connectBlocks(m_currentBlock, predicate(*loopBodyBlock));
+        // connect precon + to loop header
+        setCurrentBlock(*preconditionTestBlock);
+        connectBlocks(m_currentBlock, predicate(*loopBodyBlock));
+    }
+
+	setCurrentBlock(*afterLoopBlock); 
+
+	if (m_unknownFunctionCallSeen)
+		eraseKnowledge();
+
+	m_unknownFunctionCallSeen = unknownFunctionCallWasSeen;
+
+	return false;
 }
+
 
 bool CHCInv::visitWhile(WhileStatement const& _while) 
 {
