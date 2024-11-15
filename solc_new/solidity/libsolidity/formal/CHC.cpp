@@ -1615,7 +1615,7 @@ void CHC::defineInterfacesAndSummaries(SourceUnit const& _source)
 				{
 					m_externalSummaries[contract].emplace(function, createSummaryBlock(*function, *contract));
 
-					m_dependency_handler.mapFunctionSummary(function, m_externalSummaries[contract][function]->functor().name);
+					m_dependency_handler.mapFunctionSummary(function, contract, m_externalSummaries[contract][function]->functor().name);
 
 					auto state1 = stateVariablesAtIndex(1, *contract);
 					auto state2 = stateVariablesAtIndex(2, *contract);

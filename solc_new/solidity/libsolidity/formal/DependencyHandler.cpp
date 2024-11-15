@@ -69,11 +69,11 @@ void DependencyHandler::setCurrentContract(const ContractDefinition* contract) {
     return;
 }
 
-void DependencyHandler::mapFunctionSummary(const FunctionDefinition* func_def, std::string summary_name) {
+void DependencyHandler::mapFunctionSummary(const FunctionDefinition* func_def, const ContractDefinition* contract_def, std::string summary_name) {
     if (!active) {
         return;
     }
-    summary_clause[func_def] = summary_name;
+    summary_clause[contract_def][func_def] = summary_name;
     return;
 }
 
@@ -89,7 +89,7 @@ void DependencyHandler::addFunctionToCurrentContract(const FunctionDefinition* f
         has_loop_or_recursion[func_def] = false;
         has_branch[func_def] = false;
     }
-    if (summary_clause.find(func_def) != summary_clause.end()) {
+    if (summary_clause[m_current_contract].find(func_def) != summary_clause[m_current_contract].end()) {
         contract_funcs[m_current_contract].insert(func_def);
     }
     return;
@@ -181,10 +181,10 @@ std::map<std::string, std::set<std::string>> DependencyHandler::getDependancyGra
     auto funcs = contract_funcs[contract];
 
 	for (auto _caller: funcs) {
-		std::string _caller_name = summary_clause[_caller];
+		std::string _caller_name = summary_clause[contract][_caller];
 		dependancyGraph[_caller_name] = std::set<std::string> ();
 		for (auto _callee: funcs) {
-			std::string _callee_name = summary_clause[_callee];
+			std::string _callee_name = summary_clause[contract][_callee];
 			if (checkEdge(_caller, _callee)) {
 				dependancyGraph[_caller_name].insert(_callee_name);
 			}

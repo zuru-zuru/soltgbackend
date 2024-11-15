@@ -26,7 +26,7 @@ namespace solidity::frontend
         void activate();
         void deactivate();
         void setCurrentContract(const ContractDefinition*);
-        void mapFunctionSummary(const FunctionDefinition*, std::string);
+        void mapFunctionSummary(const FunctionDefinition*, const ContractDefinition*, std::string);
         void addFunctionToCurrentContract(const FunctionDefinition*);
         void addEdge(const FunctionDefinition*, const FunctionDefinition*);
         void addVariableAssignment(const VariableDeclaration*, const FunctionDefinition*);
@@ -52,7 +52,7 @@ namespace solidity::frontend
         bool active = false;
         std::map<const ContractDefinition*, std::set<const FunctionDefinition*, frontend::ASTCompareByID<ASTNode>>> contract_funcs;
 		std::map<const FunctionDefinition*, std::set<const FunctionDefinition*, frontend::ASTCompareByID<ASTNode>>> out_edges;
-		std::map<const FunctionDefinition*, std::string, frontend::ASTCompareByID<ASTNode>> summary_clause;
+		std::map<const ContractDefinition*,std::map<const FunctionDefinition*, std::string, frontend::ASTCompareByID<ASTNode>>, frontend::ASTCompareByID<ASTNode>> summary_clause;
 		std::map<const FunctionDefinition*, std::set<const VariableDeclaration*, frontend::ASTCompareByID<ASTNode>>> modified_vars;  
 		std::map<const FunctionDefinition*, std::set<const VariableDeclaration*, frontend::ASTCompareByID<ASTNode>>> used_vars;
         std::map<const FunctionDefinition*, bool> uses_balance;

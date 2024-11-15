@@ -702,7 +702,7 @@ bool CHCInv::visitFor(ForStatement const& _for) {
 
 bool CHCInv::visit(WhileStatement const& _while) {
     if (_while.isDoWhile()) {
-        return CHC::visit(_while);
+        return visitDoWhile(_while);
     }
     else {
         return visitWhile(_while);
