@@ -74,7 +74,7 @@ This will create the binary for solc in ```./solc/solc``` which can then be copi
 ```tgnonlin``` comes with its own version of Z3. To build Z3 run the following from the ```./soltgbackend``` directory:
 
 ```
-cd final_tg/aeval
+cd tg_final/aeval
 mkdir build
 cd build
 cmake ../
